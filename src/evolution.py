@@ -1,3 +1,4 @@
+import csv
 import os
 import time
 from concurrent.futures import ProcessPoolExecutor
@@ -60,7 +61,12 @@ class GeneticTrainer:
         noise = self.rng.normal(0.0, self.mutation_sigma, size=genome.shape)
         return genome + np.where(mask, noise, 0.0)
 
-    def train(self, save_path="data/best_weights.npy", verbose=True):
+    def train(
+        self,
+        save_path="data/best_weights.npy",
+        history_path="data/training_history.csv",
+        verbose=True,
+    ):
         population = self.rng.uniform(
             -5.0, 5.0, size=(self.pop_size, GAAgent.NUM_FEATURES)
         )
@@ -72,6 +78,8 @@ class GeneticTrainer:
 
         if save_path:
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        if history_path:
+            os.makedirs(os.path.dirname(history_path), exist_ok=True)
 
         with ProcessPoolExecutor() as pool:
             for gen in range(self.generations):
@@ -100,7 +108,8 @@ class GeneticTrainer:
                 best_idx = int(np.argmax(fitnesses))
                 gen_best = float(fitnesses[best_idx])
                 gen_mean = float(np.mean(fitnesses))
-                history.append((gen + 1, gen_best, gen_mean))
+                dt = time.perf_counter() - t0
+                history.append((gen + 1, gen_best, gen_mean, dt))
 
                 if gen_best > best_overall_fitness:
                     best_overall_fitness = gen_best
@@ -109,7 +118,6 @@ class GeneticTrainer:
                         np.save(save_path, best_overall_weights)
 
                 if verbose:
-                    dt = time.perf_counter() - t0
                     print(
                         f"Gen {gen + 1:02d}/{self.generations} | "
                         f"Best: {gen_best:7.2f} | Mean: {gen_mean:7.2f} | "
@@ -127,6 +135,13 @@ class GeneticTrainer:
                     next_pop.append(child)
 
                 population = np.array(next_pop)
+
+        if history_path:
+            with open(history_path, "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["generation", "best_fitness", "mean_fitness", "elapsed_s"])
+                for row in history:
+                    writer.writerow([row[0], f"{row[1]:.4f}", f"{row[2]:.4f}", f"{row[3]:.2f}"])
 
         return best_overall_weights, history
 
