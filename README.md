@@ -1,6 +1,6 @@
 An interactive Snake game used primarily to simulate different AI agents
-Implemented Agents:
 
+Implemented Agents:
 Baseline | Simple Reflex Agent | Greedy Manhattan-distance heuristic choosing among immediate safe moves. |
 BFS | Uninformed Search | Breadth-First Search with dynamic tail-position simulation and flood-fill fallback. |
 A* | Informed Search | Manhattan-heuristic shortest-path search with body-segment time indexing and safe fallback. |
